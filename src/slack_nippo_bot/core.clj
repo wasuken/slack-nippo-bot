@@ -2,7 +2,8 @@
   (:require [clj-slack.rtm :as rtm]
             [slack-nippo-bot.util :refer :all]
             [slack-nippo-bot.msg :refer :all]
-            [gniazdo.core :as ws]))
+            [gniazdo.core :as ws])
+  (:gen-class))
 
 (defn -main
   []

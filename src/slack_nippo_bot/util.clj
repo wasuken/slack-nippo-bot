@@ -1,5 +1,6 @@
 (ns slack-nippo-bot.util
-  (:require [aero.core :refer [read-config]]))
+  (:require [aero.core :refer [read-config]])
+  (:gen-class))
 
 (def config (read-config (clojure.java.io/resource "config.edn")))
 

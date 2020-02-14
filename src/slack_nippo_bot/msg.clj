@@ -3,7 +3,8 @@
             [slack-nippo-bot.util :refer :all]
             [slack-nippo-bot.db :refer :all]
             [clj-slack.chat :as chat]
-            [gniazdo.core :as ws]))
+            [gniazdo.core :as ws])
+  (:gen-class))
 
 (defn post-message [channel text]
   (prn 'chat (chat/post-message connection channel text)))
