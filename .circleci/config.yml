@@ -43,6 +43,9 @@ jobs:
 
       # run tests!
       - run: lein test
+      # ready env
+      - run: mkdir resources
+      - run: echo '{token: $TOKEN :db-path "./db.sqlite"}' > resoureces/config.edn
       # push master
       - run: git config user.email "wevorence@gmail.com"
       - run: git config user.name "circleci"
