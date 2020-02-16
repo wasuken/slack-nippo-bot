@@ -33,7 +33,7 @@ jobs:
             - v1-dependencies-{{ checksum "project.clj" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
-
+      - run: apt-get update && apt-get install -y libpng-dev libsqlite3-dev
       - run: lein deps
 
       - save_cache:
