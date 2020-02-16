@@ -1,9 +1,11 @@
 (ns slack-nippo-bot.db
   (:require [slack-nippo-bot.util :refer :all]
-            [clojure.java.jdbc :as j])
+            [clojure.java.jdbc :as j]
+            [environ.core :refer [env]])
   (:gen-class))
 
-(def db {:connection-uri (str "jdbc:sqlite:" (:db-path config))})
+(def db {:connection-uri (str "jdbc:sqlite:" (or (:dbpath config)
+                                                 (env :dbpath)))})
 
 (defn link-sections
   ([sec-recs] (link-sections sec-recs (* (count sec-recs) 2)))
