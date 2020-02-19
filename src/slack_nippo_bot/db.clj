@@ -4,8 +4,7 @@
             [environ.core :refer [env]])
   (:gen-class))
 
-(def db {:connection-uri (str "jdbc:sqlite:" (or (:dbpath config)
-                                                 (env :dbpath)))})
+(def db {:connection-uri (str "jdbc:sqlite:" (env :dbpath))})
 
 (defn link-sections
   ([sec-recs] (link-sections sec-recs (* (count sec-recs) 2)))
@@ -65,17 +64,23 @@
                                               "(select sentence_id from section_sentences where section_id = ?)") sec-id]))))
 
 (defn output-markdown
-  ([user] (output-markdown user 1))
-  ([user nest-level]
+  ([sec-lst user] (output-markdown sec-lst user 1))
+  ([sec-lst user nest-level]
    (let [recs (j/query db [(str "select * from sections where user = ?") user])]
-     (output-markdown user nest-level (link-sections recs (* (count recs) 2)))))
-  ([user nest-level tree]
-   (let [contents (clojure.string/join
-                "\n\n" (map #(str (clojure.string/join "" (repeat nest-level "#")) " "
-                                  (:name %) "\n\n" (section-sentences->value->format (:id %))) tree))]
-     (cond (zero? (count contents))
-           contents
-           :else
-           (str contents (clojure.string/join
-                        "\n\n"
-                        (map #(output-markdown user (+ 1 nest-level) (:children %)) tree)))))))
+     (output-markdown sec-lst user nest-level (link-sections recs (* (count recs) 2)))))
+  ([sec-lst user nest-level tree]
+   (cond (nil? (first sec-lst))
+         ""
+         :else
+         (let [contents (clojure.string/join
+                         "\n\n" (map #(str (clojure.string/join "" (repeat nest-level "#")) " "
+                                           (:name %) "\n\n" (section-sentences->value->format (:id %))) tree))]
+           (cond (zero? (count contents))
+                 contents
+                 :else
+                 (str contents (clojure.string/join
+                                "\n\n"
+                                (map #(output-markdown (drop 1 sec-lst)
+                                                       user (+ 1 nest-level)
+                                                       (:children %)) tree))))))
+   ))

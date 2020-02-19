@@ -11,20 +11,21 @@
 
 (defn parse-nippo-text [text channel user]
   (try
-    (cond (= text "!!output!!")
-          ;; ここで死んでるが、特にエラーはなし。
-          (post-message channel (output-markdown user))
-          (= text "!!help!!")
-          (post-message channel "作成中")
-          :else
-          (let [split-texts (clojure.string/split text #" ")
+    (let [split-texts (clojure.string/split text #" ")
                 vanilla-text (clojure.string/join " "
                                                   (remove #(re-matches #"^\$\$.*" %) split-texts))
                 pos-text (clojure.string/replace (or (first (filter #(re-matches #"^\$\$.*" %) split-texts))
                                                      "")
                                                  #"\$"
                                                  "")]
+      (cond (= vanilla-text "!!output!!")
+            ;; ここで死んでるが、特にエラーはなし。
+            (post-message channel (output-markdown (clojure.string/split pos-text #"==") user))
+            (= vanilla-text "!!help!!")
+            (post-message channel "作成中")
+            :else
             (insert->section-sentence (clojure.string/split pos-text #"==") vanilla-text user)))
+
     (catch Exception e (prn 'err e))))
 
 (defn parse-text [text]
