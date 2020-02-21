@@ -19,10 +19,11 @@
                                                  #"\$"
                                                  "")]
       (cond (= vanilla-text "!!output!!")
-            ;; ここで死んでるが、特にエラーはなし。
             (post-message channel (output-markdown (clojure.string/split pos-text #"==") user))
             (= vanilla-text "!!help!!")
             (post-message channel "作成中")
+            (= vanilla-text "!!delete!!")
+            (tree->delete-db (clojure.string/split pos-text #"==") user)
             :else
             (insert->section-sentence (clojure.string/split pos-text #"==") vanilla-text user)))
 

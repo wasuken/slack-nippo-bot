@@ -81,3 +81,10 @@
                                      "")
              "# hoge## fugaこれはテストです")))
   (cleanup))
+
+(t/deftest remove-test
+  (setup)
+  (t/is (= (sut/sec-tree->remove-target #(= (:name %) "foo")
+                                        {:name "hoge" :children [{:name "foo" :children nil}]})
+         {:name "foo" :children nil}))
+  (cleanup))

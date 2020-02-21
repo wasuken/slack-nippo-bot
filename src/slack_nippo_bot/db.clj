@@ -57,6 +57,23 @@
                        :sentence_id (get (first (j/insert! db :sentences {:value text :user user} {:return-keys ["id"]}))
                                          (keyword "last_insert_rowid()"))})))))
 
+(defn tree->delete-db [tree user]
+  (when-not (nil? tree)
+    (j/delete! db :sections ["id = ? and user = ?" (:id tree) user])
+    (doseq [child (:children tree)]
+      (tree->delete-db child user))))
+
+(defn sec-tree->remove-target [func top-tree]
+  (let [result (atom nil)]
+    (letfn [(search [f tree]
+              (cond (or (f tree) (nil? tree) (not (nil? @result)))
+                    (reset! result tree)
+                    :else
+                    (doseq [child (:children tree)]
+                        (search f child))))]
+      (search func top-tree))
+    @result))
+
 (defn section-sentences->value->format [sec-id]
   (clojure.string/join "\n\n"
                        (map #(:value %)
@@ -82,5 +99,5 @@
                                 "\n\n"
                                 (map #(output-markdown (drop 1 sec-lst)
                                                        user (+ 1 nest-level)
-                                                       (:children %)) tree))))))
-   ))
+                                                       (:children %))
+                                     tree))))))))
