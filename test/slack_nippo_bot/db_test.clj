@@ -57,6 +57,9 @@
      (lst-hashmap-left-keys-eq (drop 1 exp-lst) (drop 1 act-lst))
      true)))
 
+;;; deep test
+(defn lst-link-secs-left-keys-eq [exp-tree act-tree])
+
 (t/deftest input-test
   (setup)
   (let [test-case "これはテストです $hoge==fuga"
@@ -76,7 +79,7 @@
   (setup)
   (let []
     (sut/insert->section-sentence ["hoge" "fuga"] "これはテストです" "fooo")
-    (t/is (= (clojure.string/replace (sut/output-markdown ["hoge" "fuga"] "fooo")
+    (t/is (= (clojure.string/replace (sut/output-markdown "fooo" ["hoge" "fuga"])
                                      #"\n"
                                      "")
              "# hoge## fugaこれはテストです")))
@@ -88,3 +91,14 @@
                                         {:name "hoge" :children [{:name "foo" :children nil}]})
          {:name "foo" :children nil}))
   (cleanup))
+
+;; (t/deftest long-proc-test
+;;   (setup)
+;;   (let [user "piyo"
+;;         exp-link-secs-1 ]
+;;     (sut/insert->section-sentence ["hoge" "fuga"] "これはテストです" user)
+;;     (sut/link-sections (j/query test-db ["select * from sentences user = ?" user]))
+;;     (sut/insert->section-sentence ["hoge" "fuga"] "テスト2" user)
+;;     (sut/tree->delete-db ["hoge" "fuga"] user)
+;;     (sut/insert->section-sentence ["hoge" "foo"] "テスト3" user))
+;;   (cleanup))

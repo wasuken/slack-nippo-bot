@@ -45,7 +45,7 @@
                                                          {:return-keys ["id"]}))
                                        (keyword "last_insert_rowid()"))})
          (some #(= (:name %) (first sec-lst)) tree)
-         (insert->section-sentence sec-lst text user (:children tree) (:parent_id tree))
+         (insert->section-sentence (drop 1 sec-lst) text user (:children tree) (:parent_id tree))
          :else
          (let [before-parent-id (atom nil)]
            (doseq [sec sec-lst]
@@ -63,6 +63,18 @@
     (doseq [child (:children tree)]
       (tree->delete-db child user))))
 
+(defn section-sentences->value->format [user sec-id]
+  (clojure.string/join "\n\n"
+                       (map #(:value %)
+                            (j/query db [(str "select * from sections as sec "
+                                              "join section_sentences as ss "
+                                              "on ss.section_id = sec.id "
+                                              "join sentences as st "
+                                              "on ss.sentence_id = st.id "
+                                              "where sec.user = ? and sec.id = ?")
+                                         user
+                                         sec-id]))))
+
 (defn sec-tree->remove-target [func top-tree]
   (let [result (atom nil)]
     (letfn [(search [f tree]
@@ -74,30 +86,32 @@
       (search func top-tree))
     @result))
 
-(defn section-sentences->value->format [sec-id]
-  (clojure.string/join "\n\n"
-                       (map #(:value %)
-                            (j/query db [(str "select * from sentences where id in "
-                                              "(select sentence_id from section_sentences where section_id = ?)") sec-id]))))
+;; (defn output-md
+;;   ([user]
+;;    (output-md user nil))
+;;   ([user parent-id]
+;;    (output-md user parent-id (j/query db [(str "select * from sections where user = ?") user])))
+;;   ([user parent-id link-secs]
+;;    ))
 
 (defn output-markdown
-  ([sec-lst user] (output-markdown sec-lst user 1))
-  ([sec-lst user nest-level]
+  ([user sec-lst] (output-markdown user sec-lst 1))
+  ([user sec-lst nest-level]
    (let [recs (j/query db [(str "select * from sections where user = ?") user])]
-     (output-markdown sec-lst user nest-level (link-sections recs (* (count recs) 2)))))
-  ([sec-lst user nest-level tree]
+     (output-markdown user sec-lst nest-level (link-sections recs (* (count recs) 2)))))
+  ([user sec-lst nest-level tree]
    (cond (nil? (first sec-lst))
          ""
          :else
          (let [contents (clojure.string/join
                          "\n\n" (map #(str (clojure.string/join "" (repeat nest-level "#")) " "
-                                           (:name %) "\n\n" (section-sentences->value->format (:id %))) tree))]
-           (cond (zero? (count contents))
-                 contents
-                 :else
-                 (str contents (clojure.string/join
+                                           (:name %) "\n\n"
+                                           (section-sentences->value->format user (:id %)))
+                                     tree))]
+           (str contents (clojure.string/join
                                 "\n\n"
-                                (map #(output-markdown (drop 1 sec-lst)
-                                                       user (+ 1 nest-level)
+                                (map #(output-markdown user
+                                                       (drop 1 sec-lst)
+                                                       (+ 1 nest-level)
                                                        (:children %))
-                                     tree))))))))
+                                     tree)))))))

@@ -3,11 +3,23 @@
             [slack-nippo-bot.util :refer :all]
             [slack-nippo-bot.db :refer :all]
             [clj-slack.chat :as chat]
-            [gniazdo.core :as ws])
+            [gniazdo.core :as ws]
+            [clj-http.client :as client]
+            [environ.core :refer [env]])
   (:gen-class))
 
 (defn post-message [channel text]
   (prn 'chat (chat/post-message connection channel text)))
+
+(defn post-my-blog [sec-lst user]
+  (let [o-md (output-markdown sec-lst user)
+        title (subs (first (clojure.string/split o-md #"\n")) 2)]
+    (client/post (env :posturl) {:form-params {:title title
+                                               :body o-md
+                                               :token (env :posttoken)
+                                               :tags ["日報"]
+                                               :type "md"}
+                                 :form-param-encoding "UTF-8"})))
 
 (defn parse-nippo-text [text channel user]
   (try
@@ -19,11 +31,13 @@
                                                  #"\$"
                                                  "")]
       (cond (= vanilla-text "!!output!!")
-            (post-message channel (output-markdown (clojure.string/split pos-text #"==") user))
+            (post-message channel (output-markdown user (clojure.string/split pos-text #"==")))
             (= vanilla-text "!!help!!")
             (post-message channel "作成中")
             (= vanilla-text "!!delete!!")
             (tree->delete-db (clojure.string/split pos-text #"==") user)
+            (= vanilla-text "!!post!!")
+            (post-my-blog (clojure.string/split pos-text #"==") user)
             :else
             (insert->section-sentence (clojure.string/split pos-text #"==") vanilla-text user)))
 

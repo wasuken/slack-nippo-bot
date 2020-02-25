@@ -10,6 +10,7 @@
                  [org.clojure/data.json "0.2.7"]
                  [org.clojure/java.jdbc "0.7.11"]
                  [org.xerial/sqlite-jdbc "3.30.1"]
-                 [stylefruits/gniazdo "1.1.2"]]
+                 [stylefruits/gniazdo "1.1.2"]
+                 [clj-http "3.10.0"]]
   :repl-options {:init-ns slack-nippo-bot.core}
   :main slack-nippo-bot.core)
