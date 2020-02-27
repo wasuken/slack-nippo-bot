@@ -6,19 +6,20 @@
 
 (def db {:connection-uri (str "jdbc:sqlite:" (env :dbpath))})
 
+(defn link-secs-sort [secs]
+  (sort (fn [x y] (or (compare (count (filter (fn [z] (= (:parent_id z) (:id x))) secs))
+                               (count (filter (fn [z] (= (:parent_id z) (:id y))) secs)))
+                      (cond (= (:id x) (:parent_id)) -1
+                            (= (:parent_id x) (:id)) 1
+                            :else 0)))
+        secs))
+
 (defn link-sections
-  ([sec-recs] (link-sections sec-recs (* (count sec-recs) 2)))
+  ([sec-recs] (link-sections sec-recs (* (count sec-recs) 4)))
   ([sec-recs limit] (link-sections sec-recs limit 0))
   ([sec-recs limit n]
    (if (< n limit)
-     (let [result (if (= n 0)
-                    (sort (fn [x y] (or (compare (count (filter (fn [z] (= (:parent_id z) (:id x))) sec-recs))
-                                                 (count (filter (fn [z] (= (:parent_id z) (:id y))) sec-recs)))
-                                        (cond (= (:id x) (:parent_id)) -1
-                                              (= (:parent_id x) (:id)) 1
-                                              :else 0)))
-                          sec-recs)
-                    sec-recs)
+     (let [result (link-secs-sort sec-recs)
            update-rec (merge-with concat
                                   (some #(if (= (:id %) (:parent_id (first result))) %) result)
                                   {:children [(first result)]})]
@@ -45,7 +46,7 @@
                                                          {:return-keys ["id"]}))
                                        (keyword "last_insert_rowid()"))})
          (some #(= (:name %) (first sec-lst)) tree)
-         (insert->section-sentence (drop 1 sec-lst) text user (:children tree) (:parent_id tree))
+         (insert->section-sentence (drop 1 sec-lst) text user (:children tree) (:id tree))
          :else
          (let [before-parent-id (atom nil)]
            (doseq [sec sec-lst]
@@ -86,13 +87,25 @@
       (search func top-tree))
     @result))
 
-;; (defn output-md
-;;   ([user]
-;;    (output-md user nil))
-;;   ([user parent-id]
-;;    (output-md user parent-id (j/query db [(str "select * from sections where user = ?") user])))
-;;   ([user parent-id link-secs]
-;;    ))
+(defn all-output-markdown
+  ([user]
+   (prn 'secs (link-sections (j/query db [(str "select * from sections where user = ?") user])))
+   (all-output-markdown user (link-sections (j/query db [(str "select * from sections where user = ?") user]))))
+  ([user link-secs]
+   (all-output-markdown user link-secs 1))
+  ([user link-secs nest-level]
+   (if (zero? (count link-secs))
+     ""
+     (let [result (atom "")]
+       (doseq [sec link-secs]
+         (reset! result
+                 (str @result
+                      (str (clojure.string/join "" (repeat nest-level "#")) " " (:name sec)
+                           "\n\n"
+                           (section-sentences->value->format user (:id sec))
+                           "\n\n"
+                           (all-output-markdown user (:children sec) (+ 1 nest-level))))))
+       @result))))
 
 (defn output-markdown
   ([user sec-lst] (output-markdown user sec-lst 1))

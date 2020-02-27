@@ -24,22 +24,23 @@
 (defn parse-nippo-text [text channel user]
   (try
     (let [split-texts (clojure.string/split text #" ")
-                vanilla-text (clojure.string/join " "
-                                                  (remove #(re-matches #"^\$\$.*" %) split-texts))
-                pos-text (clojure.string/replace (or (first (filter #(re-matches #"^\$\$.*" %) split-texts))
-                                                     "")
-                                                 #"\$"
-                                                 "")]
+          vanilla-text (clojure.string/join " "
+                                            (remove #(re-matches #"^\$\$.*" %) split-texts))
+          pos-text (clojure.string/replace (or (first (filter #(re-matches #"^\$\$.*" %) split-texts))
+                                               "")
+                                           #"\$"
+                                           "")
+          pos-split (remove #(zero? (count %)) (clojure.string/split pos-text #"=="))]
       (cond (= vanilla-text "!!output!!")
-            (post-message channel (output-markdown user (clojure.string/split pos-text #"==")))
+            (post-message channel (all-output-markdown user))
             (= vanilla-text "!!help!!")
             (post-message channel "作成中")
             (= vanilla-text "!!delete!!")
-            (tree->delete-db (clojure.string/split pos-text #"==") user)
+            (tree->delete-db pos-split user)
             (= vanilla-text "!!post!!")
-            (post-my-blog (clojure.string/split pos-text #"==") user)
+            (post-my-blog pos-split user)
             :else
-            (insert->section-sentence (clojure.string/split pos-text #"==") vanilla-text user)))
+            (insert->section-sentence pos-split vanilla-text user)))
 
     (catch Exception e (prn 'err e))))
 
